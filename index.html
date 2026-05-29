@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#1c1c1e">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <title>在庫スキャン</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-left">
+      <h1 class="app-title">在庫スキャン</h1>
+      <div class="header-meta">
+        <span id="db-count">--件</span>
+        <span class="meta-sep">|</span>
+        <span id="db-date">未同期</span>
+      </div>
+    </div>
+    <button id="btn-sync" class="btn btn-sync">同期</button>
+  </header>
+
+  <main class="main-content">
+
+    <!-- ① 写真撮影スキャン（Android Chrome / デスクトップ Chrome） -->
+    <section class="photo-section">
+      <button id="btn-capture" class="btn btn-capture">📷 写真を撮ってスキャン</button>
+      <!-- capture="environment" で Android はリアカメラが直接開く -->
+      <input type="file" id="photo-input" accept="image/*" capture="environment" hidden>
+    </section>
+
+    <!-- ② カメラ連続スキャン（iOS Safari フォールバック / BarcodeDetector非対応環境） -->
+    <section class="camera-section" id="camera-section">
+      <div id="reader"></div>
+      <div class="camera-controls">
+        <button id="btn-start" class="btn btn-primary">▶ 連続スキャン開始</button>
+        <button id="btn-stop" class="btn btn-secondary" disabled>■ 停止</button>
+      </div>
+    </section>
+
+    <!-- ③ 手入力 / ハンディスキャナー -->
+    <section class="input-section">
+      <div class="input-row">
+        <input id="jan-input" type="text" inputmode="numeric" pattern="[0-9]*"
+               placeholder="JANコードを入力 / スキャナーをここに向ける"
+               autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+        <button id="btn-add" class="btn btn-primary btn-add">追加</button>
+      </div>
+    </section>
+
+    <section class="session-bar">
+      <span id="scan-count">スキャン済: 0件</span>
+      <button id="btn-clear" class="btn btn-danger btn-sm">CLR</button>
+    </section>
+
+    <section id="results" class="results-section">
+      <p class="empty-msg">スキャン結果はここに表示されます</p>
+    </section>
+  </main>
+
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+  <div id="permission-overlay" class="overlay hidden">
+    <div class="overlay-content">
+      <div class="overlay-icon">📷</div>
+      <p>カメラへのアクセスを<br>許可してください。</p>
+      <p class="overlay-sub">設定 → Safari → カメラ → 許可</p>
+      <button id="btn-dismiss-overlay" class="btn btn-primary">閉じる</button>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

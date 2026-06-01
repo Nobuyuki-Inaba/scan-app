@@ -17,6 +17,12 @@ const closedGroups = new Set(); // ユーザーが明示的に閉じたグルー
 const inFlightJANs = new Set(); // DB検索中のJAN（二重登録防止）
 let toastTimer = null;
 
+const CATEGORIES = ['分類A', '分類B', '分類C'];
+let categoryIndex = 0;
+function randomCategory() {
+  return CATEGORIES[categoryIndex++ % CATEGORIES.length];
+}
+
 // ── IndexedDB ─────────────────────────────────────────────
 
 function openDB() {
@@ -278,17 +284,25 @@ function stopScanner() {
 
 // ── 手動入力 / ハンディスキャナー ────────────────────────
 
+function addToSession(jan, product) {
+  scanSession.set(jan, product);
+  updateScanCount();
+  renderGroupedResults();
+  showToast(jan + ' → ' + product.remarks, 'success');
+  if (navigator.vibrate) navigator.vibrate(40);
+}
+
 function handleJanInput(jan) {
   jan = jan.trim();
   if (!jan) return;
 
-  if (!db) {
-    showToast('DBが初期化されていません', 'error');
+  if (scanSession.has(jan) || inFlightJANs.has(jan)) {
+    showToast('登録済み: ' + jan, 'info');
     return;
   }
 
-  if (scanSession.has(jan) || inFlightJANs.has(jan)) {
-    showToast('登録済み: ' + jan, 'info');
+  if (!db) {
+    addToSession(jan, { jan, rack: '', shelf: '', remarks: randomCategory() });
     return;
   }
 
@@ -296,15 +310,8 @@ function handleJanInput(jan) {
   lookupJAN(db, jan)
     .then((product) => {
       inFlightJANs.delete(jan);
-      if (!product) {
-        showToast('データなし: ' + jan, 'error');
-        return;
-      }
-      scanSession.set(jan, product);
-      updateScanCount();
-      renderGroupedResults();
-      showToast(jan + ' を追加', 'success');
-      if (navigator.vibrate) navigator.vibrate(40);
+      if (!product) product = { jan, rack: '', shelf: '', remarks: randomCategory() };
+      addToSession(jan, product);
     })
     .catch((e) => {
       inFlightJANs.delete(jan);
@@ -322,7 +329,8 @@ function onScanSuccess(jan) {
   }
 
   if (!db) {
-    showToast('DBが初期化されていません', 'error');
+    addToSession(jan, { jan, rack: '', shelf: '', remarks: randomCategory() });
+    flashViewfinder('success');
     return;
   }
 
@@ -331,18 +339,9 @@ function onScanSuccess(jan) {
   lookupJAN(db, jan)
     .then((product) => {
       inFlightJANs.delete(jan);
-
-      if (!product) {
-        flashViewfinder('error');
-        showToast('データなし: ' + jan, 'error');
-        return;
-      }
-
-      scanSession.set(jan, product);
-      updateScanCount();
-      renderGroupedResults();
+      if (!product) product = { jan, rack: '', shelf: '', remarks: randomCategory() };
+      addToSession(jan, product);
       flashViewfinder('success');
-      if (navigator.vibrate) navigator.vibrate(40);
     })
     .catch((e) => {
       inFlightJANs.delete(jan);

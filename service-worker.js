@@ -1,4 +1,4 @@
-const CACHE_NAME = 'scan-app-v1';
+const CACHE_NAME = 'scan-app-v2';
 const APP_SHELL = [
   './',
   './index.html',

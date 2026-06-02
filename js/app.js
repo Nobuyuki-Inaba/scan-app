@@ -168,6 +168,56 @@ function fetchCsvFromUrl(url) {
     });
 }
 
+// ── Pull-to-refresh ───────────────────────────────────────
+
+function initPullToRefresh() {
+  const indicator = document.getElementById('ptr-indicator');
+  const THRESHOLD = 70;
+  let startY = 0;
+  let pulling = false;
+
+  const springBack = () => {
+    indicator.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
+    indicator.style.transform = 'translateX(-50%) translateY(-52px)';
+    indicator.textContent = '↓';
+  };
+
+  document.addEventListener('touchstart', (e) => {
+    if (window.scrollY === 0 && e.touches.length === 1) {
+      startY = e.touches[0].clientY;
+      pulling = true;
+      indicator.style.transition = 'none';
+    }
+  }, { passive: true });
+
+  document.addEventListener('touchmove', (e) => {
+    if (!pulling) return;
+    const dy = e.touches[0].clientY - startY;
+    if (dy <= 0) { pulling = false; return; }
+    const travel = Math.min(dy * 0.45, 56);
+    indicator.style.transform = `translateX(-50%) translateY(${travel - 52}px)`;
+    indicator.textContent = dy >= THRESHOLD ? '↑' : '↓';
+  }, { passive: true });
+
+  document.addEventListener('touchend', (e) => {
+    if (!pulling) return;
+    pulling = false;
+    const dy = e.changedTouches[0].clientY - startY;
+    springBack();
+    if (dy >= THRESHOLD) {
+      const savedUrl = localStorage.getItem(CSV_URL_KEY);
+      if (savedUrl) fetchCsvFromUrl(savedUrl);
+      else openCsvUrlModal();
+    }
+  }, { passive: true });
+
+  document.addEventListener('touchcancel', () => {
+    if (!pulling) return;
+    pulling = false;
+    springBack();
+  }, { passive: true });
+}
+
 // ── 連続スキャン（ZXing / html5-qrcode）iOS Safari 用 ────────
 
 function handleCameraError(err) {
@@ -478,6 +528,9 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('visibilitychange', () => {
     if (document.hidden && scanner) stopScanner();
   });
+
+  // プルトゥリフレッシュ
+  initPullToRefresh();
 
   // 初期表示
   updateScanCount();

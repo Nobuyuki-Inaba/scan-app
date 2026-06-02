@@ -278,6 +278,13 @@ function resolveProduct(jan, dbProduct) {
 
 // ── 手動入力 / ハンディスキャナー ────────────────────────
 
+function deleteFromSession(jan) {
+  scanSession.delete(jan);
+  inFlightJANs.delete(jan);
+  updateScanCount();
+  renderGroupedResults();
+}
+
 function addToSession(jan, product) {
   scanSession.set(jan, product);
   updateScanCount();
@@ -396,6 +403,7 @@ function renderGroupedResults() {
         + (p.name        ? '<div class="item-name">' + escapeHTML(p.name)        + '</div>' : '')
         + (p.description ? '<div class="item-desc">' + escapeHTML(p.description) + '</div>' : '')
         + '</div>'
+        + '<button class="btn-item-delete" data-jan="' + escapeHTML(p.jan) + '" aria-label="削除">×</button>'
         + '</div>';
     }).join('');
 
@@ -529,6 +537,13 @@ document.addEventListener('DOMContentLoaded', () => {
     inFlightJANs.clear();
     updateScanCount();
     renderGroupedResults();
+  });
+
+  // 個別削除ボタン（イベント委譲）
+  document.getElementById('results').addEventListener('click', (e) => {
+    const btn = e.target.closest('.btn-item-delete');
+    if (!btn) return;
+    deleteFromSession(btn.dataset.jan);
   });
 
   // オーバーレイ閉じるボタン

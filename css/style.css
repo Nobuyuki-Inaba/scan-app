@@ -321,6 +321,26 @@ html, body {
   word-break: break-all;
 }
 
+.btn-item-delete {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 18px;
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  flex-shrink: 0;
+  align-self: center;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.btn-item-delete:active {
+  background: var(--bg);
+  color: var(--danger);
+}
+
 .item-name {
   font-size: 13px;
   font-weight: 600;

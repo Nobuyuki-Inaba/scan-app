@@ -1,9 +1,6 @@
 'use strict';
 
 // ── 設定 ──────────────────────────────────────────────────
-// サーバー上のCSVパス（Apacheの同一オリジン）
-const CSV_URL = './data/products.csv';
-
 const DB_NAME    = 'scan_app_db';
 const DB_VERSION = 1;
 const STORE_NAME = 'products';
@@ -88,16 +85,35 @@ function updateHeaderMeta() {
   document.getElementById('db-date').textContent = m.date;
 }
 
-// ── CSV同期 ───────────────────────────────────────────────
+// ── CSV URL モーダル ──────────────────────────────────────
 
-function syncFromServer() {
-  if (!db) { showToast('DBが準備できていません', 'error'); return; }
+const CSV_URL_KEY = 'csv_url';
 
-  const btnSync = document.getElementById('btn-sync');
-  btnSync.disabled = true;
-  showToast('サーバーから取得中...', 'info', 99999);
+function openCsvUrlModal() {
+  const overlay = document.getElementById('csv-url-overlay');
+  const input   = document.getElementById('csv-url-input');
+  input.value = localStorage.getItem(CSV_URL_KEY) || '';
+  overlay.classList.remove('hidden');
+  setTimeout(() => input.focus(), 100);
+}
 
-  fetch(CSV_URL, { cache: 'no-store' })
+function closeCsvUrlModal() {
+  document.getElementById('csv-url-overlay').classList.add('hidden');
+}
+
+function fetchCsvFromUrl(url) {
+  url = url.trim();
+  if (!url) { showToast('URLを入力してください', 'error'); return; }
+  if (!db)  { showToast('DBが準備できていません', 'error'); return; }
+
+  localStorage.setItem(CSV_URL_KEY, url);
+  closeCsvUrlModal();
+
+  const btnFetch = document.getElementById('btn-csv-fetch');
+  btnFetch.disabled = true;
+  showToast('CSVを取得中...', 'info', 99999);
+
+  fetch(url, { cache: 'no-store' })
     .then((response) => {
       if (!response.ok) throw new Error('HTTP ' + response.status);
       return response.text();
@@ -125,111 +141,31 @@ function syncFromServer() {
           }
         },
         complete: () => {
+          btnFetch.disabled = false;
           if (records.length === 0) {
             showToast('CSVにデータがありません', 'error');
-            btnSync.disabled = false;
             return;
           }
           bulkInsert(db, records)
             .then((count) => {
               saveMetadata(count);
               updateHeaderMeta();
-              showToast(count.toLocaleString() + '件の同期完了', 'success');
-              btnSync.disabled = false;
+              showToast(count.toLocaleString() + '件の読み込み完了', 'success');
             })
             .catch((e) => {
               showToast('DB書き込みエラー: ' + e.message, 'error');
-              btnSync.disabled = false;
             });
         },
         error: (err) => {
           showToast('CSVパースエラー: ' + err.message, 'error');
-          btnSync.disabled = false;
+          btnFetch.disabled = false;
         }
       });
     })
     .catch((e) => {
       showToast('接続エラー: ' + e.message, 'error');
-      btnSync.disabled = false;
+      btnFetch.disabled = false;
     });
-}
-
-// ── 写真撮影スキャン（[📷] ボタン → ネイティブカメラ → BarcodeDetector）────
-// input[type=file capture=environment] でネイティブカメラを開く
-// Android Chrome: リアカメラが直接起動、撮影後に高解像度画像が返ってくる
-// デスクトップ Chrome: ファイル選択ダイアログ（写真ファイルを選択）
-
-function initPhotoScanner() {
-  const btnCapture = document.getElementById('btn-capture');
-  const photoInput = document.getElementById('photo-input');
-
-  // BarcodeDetector 対応ならネイティブ検出、非対応なら html5-qrcode の scanFile() で検出
-  const useNativeDetector = typeof BarcodeDetector !== 'undefined';
-  const detector = useNativeDetector
-    ? new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'code_128', 'code_39'] })
-    : null;
-
-  btnCapture.addEventListener('click', () => { photoInput.click(); });
-
-  photoInput.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    btnCapture.disabled = true;
-    btnCapture.textContent = '解析中...';
-
-    const done = () => {
-      btnCapture.disabled = false;
-      btnCapture.textContent = '📷 写真を撮ってスキャン';
-      photoInput.value = '';
-    };
-
-    if (useNativeDetector) {
-      // BarcodeDetector（Android Chrome など）
-      createImageBitmap(file)
-        .then((bitmap) => detector.detect(bitmap).then((barcodes) => {
-          bitmap.close();
-          if (barcodes.length === 0) {
-            // BarcodeDetector で読めなければ Quagga で再試行
-            decodeWithQuagga(file, done);
-          } else {
-            for (const b of barcodes) onScanSuccess(b.rawValue);
-            done();
-          }
-        }))
-        .catch(() => decodeWithQuagga(file, done));
-    } else {
-      // Quagga（Windows Chrome / iOS Safari など）
-      decodeWithQuagga(file, done);
-    }
-  });
-}
-
-// ── Quagga デコード（ブレ・低解像度に強いEAN-13向け）─────────
-
-function decodeWithQuagga(file, done) {
-  const src = URL.createObjectURL(file);
-  Quagga.decodeSingle(
-    {
-      decoder: {
-        readers: ['ean_reader', 'ean_8_reader', 'code_128_reader'],
-        multiple: false
-      },
-      locate: true,       // バーコードを自動検出（画面全体から探す）
-      inputStream: { size: 1920 }, // 処理解像度を最大化
-      src: src
-    },
-    (result) => {
-      URL.revokeObjectURL(src);
-      if (result && result.codeResult && result.codeResult.code) {
-        onScanSuccess(result.codeResult.code);
-        done();
-      } else {
-        showToast('読み取れません。バーコードをまっすぐ正面から撮影してください', 'error');
-        done();
-      }
-    }
-  );
 }
 
 // ── 連続スキャン（ZXing / html5-qrcode）iOS Safari 用 ────────
@@ -258,7 +194,7 @@ function _doStartZXing() {
   scanner = new Html5Qrcode('reader');
   scanner.start(
     { facingMode: 'environment' },
-    { fps: 10, qrbox: { width: 280, height: 180 } },
+    { fps: 10, qrbox: { width: 250, height: 250 } },
     onScanSuccess,
     () => {}
   ).then(() => {
@@ -460,7 +396,7 @@ document.addEventListener('DOMContentLoaded', () => {
       updateHeaderMeta();
       const m = loadMetadata();
       if (!m.count) {
-        showToast('まずデータを同期してください', 'info', 4000);
+        showToast('まずCSVを読み込んでください', 'info', 4000);
       }
     })
     .catch((e) => {
@@ -474,9 +410,23 @@ document.addEventListener('DOMContentLoaded', () => {
       );
     });
 
-  // 同期ボタン
-  document.getElementById('btn-sync').addEventListener('click', () => {
-    syncFromServer();
+  // CSV取得ボタン → モーダルを開く
+  document.getElementById('btn-csv').addEventListener('click', openCsvUrlModal);
+
+  // モーダル内キャンセル
+  document.getElementById('btn-csv-cancel').addEventListener('click', closeCsvUrlModal);
+
+  // モーダル内読み込み
+  document.getElementById('btn-csv-fetch').addEventListener('click', () => {
+    fetchCsvFromUrl(document.getElementById('csv-url-input').value);
+  });
+
+  // URLインプットでEnter確定
+  document.getElementById('csv-url-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      fetchCsvFromUrl(document.getElementById('csv-url-input').value);
+    }
   });
 
   // JAN入力フィールド: Enterキー / ハンディスキャナーのEnter送出に対応
@@ -528,9 +478,6 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('visibilitychange', () => {
     if (document.hidden && scanner) stopScanner();
   });
-
-  // 写真撮影スキャン初期化（BarcodeDetector対応ブラウザのみ有効）
-  initPhotoScanner();
 
   // 初期表示
   updateScanCount();

@@ -22,19 +22,12 @@
         <span id="db-date">未同期</span>
       </div>
     </div>
-    <button id="btn-sync" class="btn btn-sync">同期</button>
+    <button id="btn-csv" class="btn btn-csv">CSV取得</button>
   </header>
 
   <main class="main-content">
 
-    <!-- ① 写真撮影スキャン（Android Chrome / デスクトップ Chrome） -->
-    <section class="photo-section">
-      <button id="btn-capture" class="btn btn-capture">📷 写真を撮ってスキャン</button>
-      <!-- capture="environment" で Android はリアカメラが直接開く -->
-      <input type="file" id="photo-input" accept="image/*" capture="environment" hidden>
-    </section>
-
-    <!-- ② カメラ連続スキャン（iOS Safari フォールバック / BarcodeDetector非対応環境） -->
+    <!-- カメラ連続スキャン -->
     <section class="camera-section" id="camera-section">
       <div id="reader"></div>
       <div class="camera-controls">
@@ -65,6 +58,21 @@
 
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
 
+  <div id="csv-url-overlay" class="overlay hidden">
+    <div class="overlay-content">
+      <h2 class="overlay-title">CSV読み込み</h2>
+      <p class="overlay-desc">CSVファイルのURLを入力してください。</p>
+      <input id="csv-url-input" type="url" class="url-input"
+             placeholder="https://example.com/products.csv"
+             autocomplete="url" autocorrect="off" autocapitalize="off" spellcheck="false">
+      <p class="csv-format-hint">必須列: JAN / ラック / 棚番号 / 備考</p>
+      <div class="overlay-actions">
+        <button id="btn-csv-cancel" class="btn btn-secondary">キャンセル</button>
+        <button id="btn-csv-fetch" class="btn btn-primary">読み込む</button>
+      </div>
+    </div>
+  </div>
+
   <div id="permission-overlay" class="overlay hidden">
     <div class="overlay-content">
       <div class="overlay-icon">📷</div>
@@ -75,7 +83,6 @@
   </div>
 
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <script src="js/app.js"></script>
 </body>

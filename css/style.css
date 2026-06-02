@@ -94,7 +94,7 @@ html, body {
 .btn-primary   { background: var(--primary); color: #fff; }
 .btn-secondary { background: #e5e5ea; color: var(--text); }
 .btn-danger    { background: var(--danger); color: #fff; }
-.btn-sync      { background: #30d158; color: #fff; padding: 8px 14px; font-size: 15px; border-radius: 8px; }
+.btn-csv       { background: #30d158; color: #fff; padding: 8px 14px; font-size: 15px; border-radius: 8px; }
 .btn-sm        { padding: 6px 14px; font-size: 15px; }
 
 /* ── Camera section ── */
@@ -104,7 +104,7 @@ html, body {
 
 #reader {
   width: 100%;
-  height: 240px;
+  height: 280px;
   overflow: hidden;
   position: relative;
   background: #000;
@@ -141,20 +141,6 @@ html, body {
 .camera-controls .btn {
   flex: 1;
 }
-
-/* ── スキャンボタン ── */
-.btn-capture {
-  display: block;
-  width: calc(100% - 32px);
-  margin: 10px 16px;
-  padding: 18px;
-  font-size: 20px;
-  background: #ff9500;
-  color: #fff;
-  border-radius: 12px;
-}
-
-.btn-capture.hidden { display: none; }
 
 /* ── JAN入力セクション ── */
 .input-section {
@@ -384,6 +370,58 @@ html, body {
 .overlay-content .btn {
   margin-top: 8px;
   width: 100%;
+}
+
+/* ── CSV URL overlay ── */
+.overlay-title {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.overlay-desc {
+  margin: 0 0 14px;
+  font-size: 15px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.url-input {
+  display: block;
+  width: 100%;
+  font-size: 15px;
+  padding: 10px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  outline: none;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-appearance: none;
+  box-sizing: border-box;
+}
+
+.url-input:focus {
+  border-color: var(--primary);
+  background: #fff;
+}
+
+.csv-format-hint {
+  margin: 8px 0 18px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-align: left;
+}
+
+.overlay-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.overlay-actions .btn {
+  flex: 1;
+  margin-top: 0;
+  width: auto;
 }
 
 /* ── Main content safe area ── */

@@ -564,3 +564,8 @@ document.addEventListener('DOMContentLoaded', () => {
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./service-worker.js');
 }
+
+// ── テスト用エクスポート（本番ブラウザでは実行されない）─────────
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { bulkInsert, lookupJAN, resolveProduct };
+}

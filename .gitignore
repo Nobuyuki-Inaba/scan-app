@@ -1,2 +1,4 @@
 data/
 *.pem
+node_modules/
+coverage/

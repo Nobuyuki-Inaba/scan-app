@@ -1,0 +1,13 @@
+{
+  "name": "scan_app",
+  "private": true,
+  "scripts": {
+    "test": "jest",
+    "test:coverage": "jest --coverage"
+  },
+  "devDependencies": {
+    "jest": "^29",
+    "jest-environment-jsdom": "^29",
+    "fake-indexeddb": "^4.0.2"
+  }
+}

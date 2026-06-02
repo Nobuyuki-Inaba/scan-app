@@ -93,8 +93,33 @@ html, body {
 .btn-primary   { background: var(--primary); color: #fff; }
 .btn-secondary { background: #e5e5ea; color: var(--text); }
 .btn-danger    { background: var(--danger); color: #fff; }
-.btn-csv       { background: #30d158; color: #fff; padding: 8px 14px; font-size: 15px; border-radius: 8px; }
+.btn-csv       { background: #30d158; color: #fff; padding: 7px 10px; font-size: 13px; border-radius: 8px; }
 .btn-sm        { padding: 6px 14px; font-size: 15px; }
+
+.header-right {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.btn-demo {
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 8px;
+}
+
+.btn-demo.demo-on  { background: #ff9f0a; color: #fff; }
+.btn-demo.demo-off { background: #636366; color: #fff; }
+
+.btn-db-clear {
+  background: #ff453a;
+  color: #fff;
+  padding: 7px 10px;
+  font-size: 13px;
+  border-radius: 8px;
+}
 
 /* ── Camera section ── */
 .camera-section {
@@ -296,10 +321,17 @@ html, body {
   word-break: break-all;
 }
 
-.item-location {
+.item-name {
   font-size: 13px;
-  color: var(--text-secondary);
+  font-weight: 600;
+  color: var(--text);
   margin-top: 2px;
+}
+
+.item-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 1px;
 }
 
 /* ── Toast ── */

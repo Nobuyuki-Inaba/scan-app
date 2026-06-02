@@ -2,14 +2,14 @@
 
 // ── 設定 ──────────────────────────────────────────────────
 const DB_NAME    = 'scan_app_db';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NAME = 'products';
 
 // ── 状態 ──────────────────────────────────────────────────
 let db      = null;
 let scanner = null; // html5-qrcode インスタンス（連続スキャンモード用）
 
-const scanSession  = new Map(); // jan → { jan, rack, shelf, remarks }
+const scanSession  = new Map(); // jan → { jan, name, category, description }
 const closedGroups = new Set(); // ユーザーが明示的に閉じたグループ名
 const inFlightJANs = new Set(); // DB検索中のJAN（二重登録防止）
 let toastTimer = null;
@@ -18,6 +18,31 @@ const CATEGORIES = ['分類A', '分類B', '分類C'];
 let categoryIndex = 0;
 function randomCategory() {
   return CATEGORIES[categoryIndex++ % CATEGORIES.length];
+}
+
+// ── デモモード ────────────────────────────────────────────
+const DEMO_MODE_KEY = 'demo_mode';
+let demoMode = localStorage.getItem(DEMO_MODE_KEY) !== 'false'; // デフォルト: ON
+
+function toggleDemoMode() {
+  demoMode = !demoMode;
+  localStorage.setItem(DEMO_MODE_KEY, demoMode ? 'true' : 'false');
+  updateDemoModeUI();
+  showToast(demoMode ? 'デモモード ON（ラウンドロビン分類）' : 'デモモード OFF（CSV分類を使用）', 'info', 2000);
+}
+
+function updateDemoModeUI() {
+  const btn = document.getElementById('btn-demo');
+  if (!btn) return;
+  if (demoMode) {
+    btn.textContent = 'DEMO: ON';
+    btn.classList.add('demo-on');
+    btn.classList.remove('demo-off');
+  } else {
+    btn.textContent = 'DEMO: OFF';
+    btn.classList.add('demo-off');
+    btn.classList.remove('demo-on');
+  }
 }
 
 // ── IndexedDB ─────────────────────────────────────────────
@@ -29,6 +54,11 @@ function openDB() {
       const database = e.target.result;
       if (!database.objectStoreNames.contains(STORE_NAME)) {
         database.createObjectStore(STORE_NAME, { keyPath: 'jan' });
+      } else if (e.oldVersion < 2) {
+        // v1→v2: 旧フォーマット（rack/shelf/remarks）を破棄
+        e.target.transaction.objectStore(STORE_NAME).clear();
+        localStorage.removeItem('db_count');
+        localStorage.removeItem('db_date');
       }
     };
     req.onsuccess = (e) => resolve(e.target.result);
@@ -36,7 +66,7 @@ function openDB() {
   });
 }
 
-// 50K件一括挿入: 単一トランザクション内で全put()を同期発火（await挟まない）
+// 一括挿入: 単一トランザクション内で全put()を同期発火（await挟まない）
 function bulkInsert(database, records) {
   return new Promise((resolve, reject) => {
     const tx    = database.transaction(STORE_NAME, 'readwrite');
@@ -59,6 +89,20 @@ function lookupJAN(database, jan) {
     req.onsuccess = (e) => resolve(e.target.result ?? null);
     req.onerror   = (e) => reject(e.target.error);
   });
+}
+
+function clearIndexedDB() {
+  if (!db) { showToast('DBが準備できていません', 'error'); return; }
+  if (!confirm('インデックスDBのデータをすべて削除しますか？')) return;
+  const tx = db.transaction(STORE_NAME, 'readwrite');
+  tx.objectStore(STORE_NAME).clear();
+  tx.oncomplete = () => {
+    localStorage.removeItem('db_count');
+    localStorage.removeItem('db_date');
+    updateHeaderMeta();
+    showToast('DBをクリアしました', 'success');
+  };
+  tx.onerror = (e) => showToast('DBクリアエラー: ' + e.target.error.message, 'error');
 }
 
 function saveMetadata(count) {
@@ -128,13 +172,13 @@ function fetchCsvFromUrl(url) {
         step: (result) => {
           const row = result.data;
           // ヘッダー名の表記ゆれ・BOM付きに対応
-          const jan = ((row['JAN'] || row['jan'] || row['﻿JAN'] || '')).toString().trim();
+          const jan = (row['JAN'] || row['jan'] || row['﻿JAN'] || '').toString().trim();
           if (!jan) return;
           records.push({
             jan,
-            rack:    (row['ラック'] || '').trim(),
-            shelf:   (row['棚番号'] || '').trim(),
-            remarks: (row['備考']   || '').trim()
+            name:        (row['sku-name']    || row['商品名']  || row['name']        || '').trim(),
+            category:    (row['category']    || row['カテゴリ'] || row['分類']        || '').trim(),
+            description: (row['description'] || row['説明']   || row['備考']         || '').trim()
           });
           if (records.length % 5000 === 0) {
             showToast(records.length.toLocaleString() + '件処理中...', 'info', 99999);
@@ -218,13 +262,28 @@ function stopScanner() {
     });
 }
 
+// ── 製品解決 ──────────────────────────────────────────────
+
+// DBの検索結果とデモモードを考慮してセッション用の製品オブジェクトを返す
+function resolveProduct(jan, dbProduct) {
+  if (demoMode) {
+    const cat = randomCategory();
+    return dbProduct
+      ? { jan, name: dbProduct.name, category: cat, description: dbProduct.description }
+      : { jan, name: '', category: cat, description: '' };
+  }
+  // 通常モード: CSVの実際のカテゴリを使用
+  return dbProduct || { jan, name: '', category: '不明', description: '' };
+}
+
 // ── 手動入力 / ハンディスキャナー ────────────────────────
 
 function addToSession(jan, product) {
   scanSession.set(jan, product);
   updateScanCount();
   renderGroupedResults();
-  showToast(jan + ' → ' + product.remarks, 'success');
+  const label = product.name || product.category || jan;
+  showToast(jan + ' → ' + label, 'success');
   if (navigator.vibrate) navigator.vibrate(40);
 }
 
@@ -238,16 +297,15 @@ function handleJanInput(jan) {
   }
 
   if (!db) {
-    addToSession(jan, { jan, rack: '', shelf: '', remarks: randomCategory() });
+    addToSession(jan, resolveProduct(jan, null));
     return;
   }
 
   inFlightJANs.add(jan);
   lookupJAN(db, jan)
-    .then((product) => {
+    .then((dbProduct) => {
       inFlightJANs.delete(jan);
-      if (!product) product = { jan, rack: '', shelf: '', remarks: randomCategory() };
-      addToSession(jan, product);
+      addToSession(jan, resolveProduct(jan, dbProduct));
     })
     .catch((e) => {
       inFlightJANs.delete(jan);
@@ -265,7 +323,7 @@ function onScanSuccess(jan) {
   }
 
   if (!db) {
-    addToSession(jan, { jan, rack: '', shelf: '', remarks: randomCategory() });
+    addToSession(jan, resolveProduct(jan, null));
     flashViewfinder('success');
     return;
   }
@@ -273,10 +331,9 @@ function onScanSuccess(jan) {
   inFlightJANs.add(jan);
 
   lookupJAN(db, jan)
-    .then((product) => {
+    .then((dbProduct) => {
       inFlightJANs.delete(jan);
-      if (!product) product = { jan, rack: '', shelf: '', remarks: randomCategory() };
-      addToSession(jan, product);
+      addToSession(jan, resolveProduct(jan, dbProduct));
       flashViewfinder('success');
     })
     .catch((e) => {
@@ -315,12 +372,12 @@ function renderGroupedResults() {
     return;
   }
 
-  // 備考でグループ化
+  // カテゴリでグループ化
   const groups = new Map();
   for (const [jan, product] of scanSession) {
-    const key = product.remarks || '（備考なし）';
+    const key = product.category || '（カテゴリなし）';
     if (!groups.has(key)) groups.set(key, []);
-    groups.get(key).push({ jan, rack: product.rack, shelf: product.shelf });
+    groups.get(key).push({ jan, name: product.name, description: product.description });
   }
 
   // グループ名を五十音順でソート
@@ -336,8 +393,8 @@ function renderGroupedResults() {
         + '<span class="tree-char">' + (isLast ? '└' : '├') + '</span>'
         + '<div class="item-info">'
         +   '<div class="item-jan">' + escapeHTML(p.jan) + '</div>'
-        +   '<div class="item-location">ラック: ' + escapeHTML(p.rack)
-        +     '&nbsp;&nbsp;棚: ' + escapeHTML(p.shelf) + '</div>'
+        + (p.name        ? '<div class="item-name">' + escapeHTML(p.name)        + '</div>' : '')
+        + (p.description ? '<div class="item-desc">' + escapeHTML(p.description) + '</div>' : '')
         + '</div>'
         + '</div>';
     }).join('');
@@ -365,8 +422,6 @@ function renderGroupedResults() {
     });
   });
 }
-
-let toastClearTimer = null;
 
 function showToast(message, type, duration) {
   if (duration === undefined) duration = 2500;
@@ -410,8 +465,15 @@ document.addEventListener('DOMContentLoaded', () => {
       );
     });
 
+  // デモモードボタン
+  document.getElementById('btn-demo').addEventListener('click', toggleDemoMode);
+  updateDemoModeUI();
+
   // CSV取得ボタン → モーダルを開く
   document.getElementById('btn-csv').addEventListener('click', openCsvUrlModal);
+
+  // DBクリアボタン
+  document.getElementById('btn-db-clear').addEventListener('click', clearIndexedDB);
 
   // モーダル内キャンセル
   document.getElementById('btn-csv-cancel').addEventListener('click', closeCsvUrlModal);
@@ -460,7 +522,7 @@ document.addEventListener('DOMContentLoaded', () => {
     stopScanner();
   });
 
-  // CLRボタン
+  // CLRボタン（スキャンセッションのみクリア）
   document.getElementById('btn-clear').addEventListener('click', () => {
     scanSession.clear();
     closedGroups.clear();

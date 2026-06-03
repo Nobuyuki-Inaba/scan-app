@@ -456,6 +456,23 @@ html, body {
   background: #fff;
 }
 
+.csv-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.csv-divider::before,
+.csv-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
 .csv-format-hint {
   margin: 8px 0 18px;
   font-size: 12px;
@@ -465,14 +482,14 @@ html, body {
 
 .overlay-actions {
   display: flex;
+  flex-direction: column;
   gap: 10px;
   margin-top: 4px;
 }
 
 .overlay-actions .btn {
-  flex: 1;
   margin-top: 0;
-  width: auto;
+  width: 100%;
 }
 
 /* ── Main content safe area ── */

@@ -145,6 +145,38 @@ function closeCsvUrlModal() {
   document.getElementById('csv-url-overlay').classList.add('hidden');
 }
 
+function parseCsvText(text) {
+  return new Promise((resolve, reject) => {
+    const records = [];
+    Papa.parse(text, {
+      header: true,
+      encoding: 'UTF-8',
+      skipEmptyLines: true,
+      step: (result) => {
+        const row = result.data;
+        const jan = (row['JAN'] || row['jan'] || row['﻿JAN'] || '').toString().trim();
+        if (!jan) return;
+        records.push({
+          jan,
+          name:        (row['sku-name']    || row['商品名']  || row['name']        || '').trim(),
+          category:    (row['category']    || row['カテゴリ'] || row['分類']        || '').trim(),
+          description: (row['description'] || row['説明']   || row['備考']         || '').trim()
+        });
+        if (records.length % 5000 === 0) {
+          showToast(records.length.toLocaleString() + '件処理中...', 'info', 99999);
+        }
+      },
+      complete: () => {
+        if (records.length === 0) { reject(new Error('CSVにデータがありません')); return; }
+        bulkInsert(db, records)
+          .then((count) => { saveMetadata(count); updateHeaderMeta(); resolve(count); })
+          .catch((e) => reject(new Error('DB書き込みエラー: ' + e.message)));
+      },
+      error: (err) => reject(new Error('CSVパースエラー: ' + err.message))
+    });
+  });
+}
+
 function fetchCsvFromUrl(url) {
   url = url.trim();
   if (!url) { showToast('URLを入力してください', 'error'); return; }
@@ -162,54 +194,33 @@ function fetchCsvFromUrl(url) {
       if (!response.ok) throw new Error('HTTP ' + response.status);
       return response.text();
     })
-    .then((text) => {
-      const records = [];
+    .then((text) => parseCsvText(text))
+    .then((count) => showToast(count.toLocaleString() + '件の読み込み完了', 'success'))
+    .catch((e) => showToast('接続エラー: ' + e.message, 'error'))
+    .finally(() => { btnFetch.disabled = false; });
+}
 
-      Papa.parse(text, {
-        header: true,
-        encoding: 'UTF-8',
-        skipEmptyLines: true,
-        step: (result) => {
-          const row = result.data;
-          // ヘッダー名の表記ゆれ・BOM付きに対応
-          const jan = (row['JAN'] || row['jan'] || row['﻿JAN'] || '').toString().trim();
-          if (!jan) return;
-          records.push({
-            jan,
-            name:        (row['sku-name']    || row['商品名']  || row['name']        || '').trim(),
-            category:    (row['category']    || row['カテゴリ'] || row['分類']        || '').trim(),
-            description: (row['description'] || row['説明']   || row['備考']         || '').trim()
-          });
-          if (records.length % 5000 === 0) {
-            showToast(records.length.toLocaleString() + '件処理中...', 'info', 99999);
-          }
-        },
-        complete: () => {
-          btnFetch.disabled = false;
-          if (records.length === 0) {
-            showToast('CSVにデータがありません', 'error');
-            return;
-          }
-          bulkInsert(db, records)
-            .then((count) => {
-              saveMetadata(count);
-              updateHeaderMeta();
-              showToast(count.toLocaleString() + '件の読み込み完了', 'success');
-            })
-            .catch((e) => {
-              showToast('DB書き込みエラー: ' + e.message, 'error');
-            });
-        },
-        error: (err) => {
-          showToast('CSVパースエラー: ' + err.message, 'error');
-          btnFetch.disabled = false;
-        }
-      });
-    })
-    .catch((e) => {
-      showToast('接続エラー: ' + e.message, 'error');
-      btnFetch.disabled = false;
-    });
+function loadCsvFromFile(file) {
+  if (!file) return;
+  if (!db) { showToast('DBが準備できていません', 'error'); return; }
+
+  closeCsvUrlModal();
+  const btnFile = document.getElementById('btn-csv-file');
+  btnFile.disabled = true;
+  showToast('CSVを読み込み中...', 'info', 99999);
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    parseCsvText(e.target.result)
+      .then((count) => showToast(count.toLocaleString() + '件の読み込み完了', 'success'))
+      .catch((err) => showToast(err.message, 'error'))
+      .finally(() => { btnFile.disabled = false; });
+  };
+  reader.onerror = () => {
+    showToast('ファイル読み込みエラー', 'error');
+    btnFile.disabled = false;
+  };
+  reader.readAsText(file);
 }
 
 // ── 連続スキャン（ZXing / html5-qrcode）iOS Safari 用 ────────
@@ -479,6 +490,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // CSV取得ボタン → モーダルを開く
   document.getElementById('btn-csv').addEventListener('click', openCsvUrlModal);
+
+  // ファイル選択ボタン → hidden file inputをトリガー
+  document.getElementById('btn-csv-file').addEventListener('click', () => {
+    document.getElementById('csv-file-input').click();
+  });
+
+  // ファイル選択後に読み込み開始
+  document.getElementById('csv-file-input').addEventListener('change', (e) => {
+    loadCsvFromFile(e.target.files[0]);
+    e.target.value = ''; // 同じファイルの再選択を許可
+  });
 
   // DBクリアボタン
   document.getElementById('btn-db-clear').addEventListener('click', clearIndexedDB);

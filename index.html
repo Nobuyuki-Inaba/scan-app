@@ -65,14 +65,16 @@
   <div id="csv-url-overlay" class="overlay hidden">
     <div class="overlay-content">
       <h2 class="overlay-title">CSV読み込み</h2>
-      <p class="overlay-desc">CSVファイルのURLを入力してください。</p>
+      <button id="btn-csv-file" class="btn btn-primary">端末からファイルを選択</button>
+      <input id="csv-file-input" type="file" accept=".csv,.txt" style="display:none">
+      <div class="csv-divider">または</div>
       <input id="csv-url-input" type="url" class="url-input"
              placeholder="https://example.com/products.csv"
              autocomplete="url" autocorrect="off" autocapitalize="off" spellcheck="false">
       <p class="csv-format-hint">必須列: JAN / sku-name / category / description</p>
       <div class="overlay-actions">
         <button id="btn-csv-cancel" class="btn btn-secondary">キャンセル</button>
-        <button id="btn-csv-fetch" class="btn btn-primary">読み込む</button>
+        <button id="btn-csv-fetch" class="btn btn-primary">URLから読み込む</button>
       </div>
     </div>
   </div>

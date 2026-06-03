@@ -308,6 +308,7 @@ function addToSession(jan, product) {
 function handleJanInput(jan) {
   jan = jan.trim();
   if (!jan) return;
+  if (jan.length === 12) jan = '0' + jan;
 
   if (scanSession.has(jan) || inFlightJANs.has(jan)) {
     showToast('登録済み: ' + jan, 'info');
@@ -333,6 +334,7 @@ function handleJanInput(jan) {
 
 function onScanSuccess(jan) {
   jan = jan.trim();
+  if (jan.length === 12) jan = '0' + jan;
 
   // 重複・検索中はスキップ
   if (scanSession.has(jan) || inFlightJANs.has(jan)) {

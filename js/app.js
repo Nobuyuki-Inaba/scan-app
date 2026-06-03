@@ -22,7 +22,7 @@ function randomCategory() {
 
 // ── デモモード ────────────────────────────────────────────
 const DEMO_MODE_KEY = 'demo_mode';
-let demoMode = localStorage.getItem(DEMO_MODE_KEY) !== 'false'; // デフォルト: ON
+let demoMode = localStorage.getItem(DEMO_MODE_KEY) === 'true'; // デフォルト: OFF
 
 function toggleDemoMode() {
   demoMode = !demoMode;

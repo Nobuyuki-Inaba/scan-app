@@ -147,21 +147,33 @@ function closeCsvUrlModal() {
 
 function parseCsvText(text) {
   return new Promise((resolve, reject) => {
+    // 先頭セルが数字のみならヘッダーなしと判断
+    const firstCell = text.replace(/^﻿/, '').trim().split(/\r?\n/)[0]
+      .split(',')[0].replace(/^"|"$/g, '').trim();
+    const hasHeader = !/^\d+$/.test(firstCell);
+
     const records = [];
     Papa.parse(text, {
-      header: true,
+      header: hasHeader,
       encoding: 'UTF-8',
       skipEmptyLines: true,
       step: (result) => {
-        const row = result.data;
-        const jan = (row['JAN'] || row['jan'] || row['﻿JAN'] || '').toString().trim();
+        let jan, name, category, description;
+        if (hasHeader) {
+          const row = result.data;
+          jan         = (row['JAN'] || row['jan'] || row['﻿JAN'] || '').toString().trim();
+          name        = (row['sku-name']    || row['商品名']  || row['name']        || '').trim();
+          category    = (row['category']    || row['カテゴリ'] || row['分類']        || '').trim();
+          description = (row['description'] || row['説明']   || row['備考']         || '').trim();
+        } else {
+          const row = result.data;
+          jan         = (row[0] || '').toString().trim();
+          name        = (row[1] || '').trim();
+          category    = (row[2] || '').trim();
+          description = (row[3] || '').trim();
+        }
         if (!jan) return;
-        records.push({
-          jan,
-          name:        (row['sku-name']    || row['商品名']  || row['name']        || '').trim(),
-          category:    (row['category']    || row['カテゴリ'] || row['分類']        || '').trim(),
-          description: (row['description'] || row['説明']   || row['備考']         || '').trim()
-        });
+        records.push({ jan, name, category, description });
         if (records.length % 5000 === 0) {
           showToast(records.length.toLocaleString() + '件処理中...', 'info', 99999);
         }

@@ -5,6 +5,8 @@ const DB_NAME    = 'scan_app_db';
 const DB_VERSION = 2;
 const STORE_NAME = 'products';
 
+const VERSION = { date: '2026-06-09', count: 17 };
+
 // ── 状態 ──────────────────────────────────────────────────
 let db      = null;
 let scanner = null; // html5-qrcode インスタンス（連続スキャンモード用）
@@ -505,6 +507,11 @@ document.addEventListener('DOMContentLoaded', () => {
         99999
       );
     });
+
+  // タイトルタップでバージョン表示
+  document.querySelector('.app-title').addEventListener('click', () => {
+    alert('在庫スキャン\nバージョン: ' + VERSION.date + ' #' + VERSION.count);
+  });
 
   // デモモードボタン
   document.getElementById('btn-demo').addEventListener('click', toggleDemoMode);

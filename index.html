@@ -10,7 +10,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-192.png">
   <title>在庫スキャン</title>
-  <link rel="stylesheet" href="css/style.css?v=2026-06-10-2">
+  <link rel="stylesheet" href="css/style.css?v=2026-06-10-3">
 </head>
 <body>
   <header class="app-header">
@@ -43,7 +43,7 @@
     <!-- ③ 手入力 / ハンディスキャナー -->
     <section class="input-section">
       <div class="input-row">
-        <input id="jan-input" type="text" inputmode="numeric" pattern="[0-9]*"
+        <input id="jan-input" type="text" inputmode="none" pattern="[0-9]*"
                placeholder="JANコードを入力 / スキャナーをここに向ける"
                autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
         <button id="btn-add" class="btn btn-primary btn-add">追加</button>
@@ -85,6 +85,11 @@
       <p class="settings-version"></p>
       <h3 class="settings-section-title">対応バーコード</h3>
       <div id="format-checkboxes" class="format-list"></div>
+      <h3 class="settings-section-title">入力方法</h3>
+      <label class="format-item">
+        <input type="checkbox" id="manual-input-toggle">
+        <span>手動入力モード（ソフトキーボードを表示）</span>
+      </label>
       <div class="overlay-actions">
         <button id="btn-settings-close" class="btn btn-primary">閉じる</button>
       </div>
@@ -102,6 +107,6 @@
 
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-  <script src="js/app.js?v=2026-06-10-2"></script>
+  <script src="js/app.js?v=2026-06-10-3"></script>
 </body>
 </html>

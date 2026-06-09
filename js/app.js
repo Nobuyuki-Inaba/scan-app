@@ -5,7 +5,7 @@ const DB_NAME    = 'scan_app_db';
 const DB_VERSION = 2;
 const STORE_NAME = 'products';
 
-const VERSION = { date: '2026-06-10', count: 2 };
+const VERSION = { date: '2026-06-10', count: 3 };
 
 // ── 状態 ──────────────────────────────────────────────────
 let db      = null;
@@ -41,6 +41,18 @@ function loadEnabledFormatKeys() {
 function getFormatsToSupport() {
   const enabled = loadEnabledFormatKeys();
   return FORMAT_DEFS.filter(f => enabled.includes(f.key)).map(f => f.format);
+}
+
+// ── 手動入力モード ────────────────────────────────────────
+const MANUAL_INPUT_KEY = 'manual_input';
+
+function isManualInputEnabled() {
+  return localStorage.getItem(MANUAL_INPUT_KEY) === 'true'; // デフォルト: OFF
+}
+
+function applyInputMode() {
+  const input = document.getElementById('jan-input');
+  if (input) input.inputMode = isManualInputEnabled() ? 'numeric' : 'none';
 }
 
 // ── デモモード ────────────────────────────────────────────
@@ -79,6 +91,7 @@ function openSettingsDialog() {
       <span>${f.label}</span>
     </label>
   `).join('');
+  document.getElementById('manual-input-toggle').checked = isManualInputEnabled();
   overlay.classList.remove('hidden');
 }
 
@@ -550,6 +563,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const checked = [...document.querySelectorAll('#format-checkboxes input:checked')].map(i => i.value);
     if (checked.length === 0) { showToast('最低1つ選択してください', 'error'); return; }
     localStorage.setItem(FORMATS_KEY, JSON.stringify(checked));
+    localStorage.setItem(MANUAL_INPUT_KEY,
+      document.getElementById('manual-input-toggle').checked ? 'true' : 'false');
+    applyInputMode();
     document.getElementById('settings-overlay').classList.add('hidden');
     if (scanner) {
       stopScanner();
@@ -560,6 +576,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // デモモードボタン
   document.getElementById('btn-demo').addEventListener('click', toggleDemoMode);
   updateDemoModeUI();
+  applyInputMode();
 
   // CSV取得ボタン → モーダルを開く
   document.getElementById('btn-csv').addEventListener('click', openCsvUrlModal);

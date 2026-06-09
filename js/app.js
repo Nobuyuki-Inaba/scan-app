@@ -261,7 +261,15 @@ function _doStartZXing() {
   scanner = new Html5Qrcode('reader');
   scanner.start(
     { facingMode: 'environment' },
-    { fps: 10, qrbox: { width: 250, height: 250 } },
+    {
+      fps: 15,
+      qrbox: { width: 280, height: 100 },
+      videoConstraints: {
+        facingMode: { ideal: 'environment' },
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
+      }
+    },
     onScanSuccess,
     () => {}
   ).then(() => {

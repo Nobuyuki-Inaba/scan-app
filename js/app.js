@@ -5,7 +5,7 @@ const DB_NAME    = 'scan_app_db';
 const DB_VERSION = 2;
 const STORE_NAME = 'products';
 
-const VERSION = { date: '2026-06-09', count: 18 };
+const VERSION = { date: '2026-06-09', count: 19 };
 
 // ── 状態 ──────────────────────────────────────────────────
 let db      = null;
@@ -551,6 +551,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (checked.length === 0) { showToast('最低1つ選択してください', 'error'); return; }
     localStorage.setItem(FORMATS_KEY, JSON.stringify(checked));
     document.getElementById('settings-overlay').classList.add('hidden');
+    if (scanner) {
+      stopScanner();
+      setTimeout(startScanner, 600);
+    }
   });
 
   // デモモードボタン

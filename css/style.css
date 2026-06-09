@@ -495,6 +495,48 @@ html, body {
   width: 100%;
 }
 
+/* ── Settings overlay ── */
+.settings-version {
+  color: var(--text-secondary);
+  font-size: 13px;
+  margin: 0 0 16px;
+}
+
+.settings-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 10px;
+}
+
+.format-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 20px;
+}
+
+.format-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--bg);
+  border-radius: 8px;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.format-item input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--primary);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
 /* ── Main content safe area ── */
 .main-content {
   padding-bottom: env(safe-area-inset-bottom);

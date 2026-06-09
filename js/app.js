@@ -5,7 +5,7 @@ const DB_NAME    = 'scan_app_db';
 const DB_VERSION = 2;
 const STORE_NAME = 'products';
 
-const VERSION = { date: '2026-06-09', count: 17 };
+const VERSION = { date: '2026-06-09', count: 18 };
 
 // ── 状態 ──────────────────────────────────────────────────
 let db      = null;
@@ -20,6 +20,27 @@ const CATEGORIES = ['分類A', '分類B', '分類C'];
 let categoryIndex = 0;
 function randomCategory() {
   return CATEGORIES[categoryIndex++ % CATEGORIES.length];
+}
+
+// ── バーコードフォーマット ────────────────────────────────
+const FORMATS_KEY = 'scan_formats';
+const FORMAT_DEFS = [
+  { key: 'EAN_13',  label: 'EAN-13（JANコード 13桁）', format: Html5QrcodeSupportedFormats.EAN_13,  defaultOn: true  },
+  { key: 'EAN_8',   label: 'EAN-8（JANコード 8桁）',   format: Html5QrcodeSupportedFormats.EAN_8,   defaultOn: true  },
+  { key: 'UPC_A',   label: 'UPC-A（国際商品 12桁）',   format: Html5QrcodeSupportedFormats.UPC_A,   defaultOn: true  },
+  { key: 'UPC_E',   label: 'UPC-E（国際商品短縮形）',  format: Html5QrcodeSupportedFormats.UPC_E,   defaultOn: true  },
+  { key: 'QR_CODE', label: 'QRコード',                  format: Html5QrcodeSupportedFormats.QR_CODE, defaultOn: false },
+];
+
+function loadEnabledFormatKeys() {
+  const saved = localStorage.getItem(FORMATS_KEY);
+  if (!saved) return FORMAT_DEFS.filter(f => f.defaultOn).map(f => f.key);
+  try { return JSON.parse(saved); } catch { return FORMAT_DEFS.filter(f => f.defaultOn).map(f => f.key); }
+}
+
+function getFormatsToSupport() {
+  const enabled = loadEnabledFormatKeys();
+  return FORMAT_DEFS.filter(f => enabled.includes(f.key)).map(f => f.format);
 }
 
 // ── デモモード ────────────────────────────────────────────
@@ -45,6 +66,20 @@ function updateDemoModeUI() {
     btn.classList.add('demo-off');
     btn.classList.remove('demo-on');
   }
+}
+
+function openSettingsDialog() {
+  const overlay = document.getElementById('settings-overlay');
+  overlay.querySelector('.settings-version').textContent =
+    'バージョン: ' + VERSION.date + ' #' + VERSION.count;
+  const enabled = loadEnabledFormatKeys();
+  document.getElementById('format-checkboxes').innerHTML = FORMAT_DEFS.map(f => `
+    <label class="format-item">
+      <input type="checkbox" value="${f.key}" ${enabled.includes(f.key) ? 'checked' : ''}>
+      <span>${f.label}</span>
+    </label>
+  `).join('');
+  overlay.classList.remove('hidden');
 }
 
 // ── IndexedDB ─────────────────────────────────────────────
@@ -266,6 +301,7 @@ function _doStartZXing() {
     {
       fps: 15,
       qrbox: { width: 280, height: 100 },
+      formatsToSupport: getFormatsToSupport(),
       videoConstraints: {
         facingMode: { ideal: 'environment' },
         width: { ideal: 1280 },
@@ -508,9 +544,13 @@ document.addEventListener('DOMContentLoaded', () => {
       );
     });
 
-  // タイトルタップでバージョン表示
-  document.querySelector('.app-title').addEventListener('click', () => {
-    alert('在庫スキャン\nバージョン: ' + VERSION.date + ' #' + VERSION.count);
+  // タイトルタップで設定ダイアログ
+  document.querySelector('.app-title').addEventListener('click', openSettingsDialog);
+  document.getElementById('btn-settings-close').addEventListener('click', () => {
+    const checked = [...document.querySelectorAll('#format-checkboxes input:checked')].map(i => i.value);
+    if (checked.length === 0) { showToast('最低1つ選択してください', 'error'); return; }
+    localStorage.setItem(FORMATS_KEY, JSON.stringify(checked));
+    document.getElementById('settings-overlay').classList.add('hidden');
   });
 
   // デモモードボタン

@@ -10,7 +10,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-192.png">
   <title>在庫スキャン</title>
-  <link rel="stylesheet" href="css/style.css?v=2026-06-09-17">
+  <link rel="stylesheet" href="css/style.css?v=2026-06-09-18">
 </head>
 <body>
   <header class="app-header">
@@ -79,6 +79,18 @@
     </div>
   </div>
 
+  <div id="settings-overlay" class="overlay hidden">
+    <div class="overlay-content">
+      <h2 class="overlay-title">設定</h2>
+      <p class="settings-version"></p>
+      <h3 class="settings-section-title">対応バーコード</h3>
+      <div id="format-checkboxes" class="format-list"></div>
+      <div class="overlay-actions">
+        <button id="btn-settings-close" class="btn btn-primary">閉じる</button>
+      </div>
+    </div>
+  </div>
+
   <div id="permission-overlay" class="overlay hidden">
     <div class="overlay-content">
       <div class="overlay-icon">📷</div>
@@ -90,6 +102,6 @@
 
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-  <script src="js/app.js?v=2026-06-09-17"></script>
+  <script src="js/app.js?v=2026-06-09-18"></script>
 </body>
 </html>

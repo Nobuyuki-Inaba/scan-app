@@ -5,7 +5,7 @@ const DB_NAME    = 'scan_app_db';
 const DB_VERSION = 2;
 const STORE_NAME = 'products';
 
-const VERSION = { date: '2026-06-09', count: 19 };
+const VERSION = { date: '2026-06-10', count: 1 };
 
 // ── 状態 ──────────────────────────────────────────────────
 let db      = null;
@@ -295,13 +295,12 @@ function startScanner() {
 }
 
 function _doStartZXing() {
-  scanner = new Html5Qrcode('reader');
+  scanner = new Html5Qrcode('reader', { formatsToSupport: getFormatsToSupport() });
   scanner.start(
     { facingMode: 'environment' },
     {
       fps: 15,
       qrbox: { width: 280, height: 100 },
-      formatsToSupport: getFormatsToSupport(),
       videoConstraints: {
         facingMode: { ideal: 'environment' },
         width: { ideal: 1280 },

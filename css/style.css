@@ -344,6 +344,41 @@ html, body {
   color: var(--danger);
 }
 
+.btn-item-check {
+  background: none;
+  border: 2px solid var(--border);
+  color: var(--border);
+  font-size: 13px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  cursor: pointer;
+  flex-shrink: 0;
+  align-self: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.btn-item-check.checked {
+  background: var(--success);
+  border-color: var(--success);
+  color: #fff;
+}
+
+.result-item.checked {
+  background: rgba(52, 199, 89, 0.1);
+}
+
+.result-item.checked .item-jan,
+.result-item.checked .item-name {
+  color: var(--success);
+}
+
 .item-name {
   font-size: 13px;
   font-weight: 600;

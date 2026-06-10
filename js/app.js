@@ -5,7 +5,7 @@ const DB_NAME    = 'scan_app_db';
 const DB_VERSION = 2;
 const STORE_NAME = 'products';
 
-const VERSION = { date: '2026-06-10', count: 3 };
+const VERSION = { date: '2026-06-10', count: 4 };
 
 // ── 状態 ──────────────────────────────────────────────────
 let db      = null;
@@ -14,6 +14,7 @@ let scanner = null; // html5-qrcode インスタンス（連続スキャンモ�
 const scanSession  = new Map(); // jan → { jan, name, category, description }
 const closedGroups = new Set(); // ユーザーが明示的に閉じたグループ名
 const inFlightJANs = new Set(); // DB検索中のJAN（二重登録防止）
+const checkedItems = new Set(); // チェック済みJAN
 let toastTimer = null;
 
 const CATEGORIES = ['分類A', '分類B', '分類C'];
@@ -362,6 +363,7 @@ function resolveProduct(jan, dbProduct) {
 
 function deleteFromSession(jan) {
   scanSession.delete(jan);
+  checkedItems.delete(jan);
   inFlightJANs.delete(jan);
   updateScanCount();
   renderGroupedResults();
@@ -443,8 +445,12 @@ function flashViewfinder(type) {
 // ── UI ────────────────────────────────────────────────────
 
 function updateScanCount() {
-  document.getElementById('scan-count').textContent =
-    'スキャン済: ' + scanSession.size + '件';
+  const total   = scanSession.size;
+  const checked = checkedItems.size;
+  const el = document.getElementById('scan-count');
+  el.textContent = checked > 0
+    ? 'スキャン済: ' + total + '件（チェック: ' + checked + '）'
+    : 'スキャン済: ' + total + '件';
 }
 
 function escapeHTML(str) {
@@ -479,8 +485,10 @@ function renderGroupedResults() {
     const isOpen = !closedGroups.has(key); // デフォルトは展開
 
     const rows = items.map((p, i) => {
-      const isLast = i === items.length - 1;
-      return '<div class="result-item">'
+      const isLast    = i === items.length - 1;
+      const isChecked = checkedItems.has(p.jan);
+      return '<div class="result-item' + (isChecked ? ' checked' : '') + '">'
+        + '<button class="btn-item-check' + (isChecked ? ' checked' : '') + '" data-jan="' + escapeHTML(p.jan) + '" aria-label="チェック">✓</button>'
         + '<span class="tree-char">' + (isLast ? '└' : '├') + '</span>'
         + '<div class="item-info">'
         +   '<div class="item-jan">' + escapeHTML(p.jan) + '</div>'
@@ -647,15 +655,24 @@ document.addEventListener('DOMContentLoaded', () => {
     scanSession.clear();
     closedGroups.clear();
     inFlightJANs.clear();
+    checkedItems.clear();
     updateScanCount();
     renderGroupedResults();
   });
 
-  // 個別削除ボタン（イベント委譲）
+  // チェック・削除ボタン（イベント委譲）
   document.getElementById('results').addEventListener('click', (e) => {
-    const btn = e.target.closest('.btn-item-delete');
-    if (!btn) return;
-    deleteFromSession(btn.dataset.jan);
+    const checkBtn = e.target.closest('.btn-item-check');
+    if (checkBtn) {
+      const jan = checkBtn.dataset.jan;
+      if (checkedItems.has(jan)) checkedItems.delete(jan);
+      else checkedItems.add(jan);
+      updateScanCount();
+      renderGroupedResults();
+      return;
+    }
+    const deleteBtn = e.target.closest('.btn-item-delete');
+    if (deleteBtn) deleteFromSession(deleteBtn.dataset.jan);
   });
 
   // オーバーレイ閉じるボタン

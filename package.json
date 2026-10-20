@@ -3,11 +3,21 @@
   "private": true,
   "scripts": {
     "test": "jest",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "vendor": "node tools/vendor.mjs",
+    "dev": "wrangler dev",
+    "dev:lan": "wrangler dev --ip 0.0.0.0 --local-protocol https --https-key-path 192.168.0.13-key.pem --https-cert-path 192.168.0.13.pem",
+    "deploy": "jest && wrangler deploy",
+    "whoami": "wrangler whoami"
   },
   "devDependencies": {
+    "fake-indexeddb": "^4.0.2",
     "jest": "^29",
     "jest-environment-jsdom": "^29",
-    "fake-indexeddb": "^4.0.2"
+    "wrangler": "4.127.1"
+  },
+  "dependencies": {
+    "papaparse": "5.7.0",
+    "zxing-wasm": "3.1.4"
   }
 }

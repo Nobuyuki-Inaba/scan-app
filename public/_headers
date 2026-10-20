@@ -1,0 +1,7 @@
+# Cloudflare Workers Static Assets のレスポンスヘッダー
+# Service Worker 本体は毎回サーバーに確認させる（更新検出が遅れないように）
+/service-worker.js
+  Cache-Control: no-cache
+
+/*
+  X-Robots-Tag: noindex, nofollow

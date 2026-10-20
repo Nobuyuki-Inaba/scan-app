@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -10,7 +10,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-192.png">
   <title>在庫スキャン</title>
-  <link rel="stylesheet" href="css/style.css?v=2026-06-10-5">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
   <header class="app-header">
@@ -23,17 +23,26 @@
       </div>
     </div>
     <div class="header-right">
-      <button id="btn-demo" class="btn btn-demo demo-on">DEMO: ON</button>
+      <button id="btn-demo" class="btn btn-demo demo-off">DEMO: OFF</button>
       <button id="btn-csv" class="btn btn-csv">CSV取得</button>
       <button id="btn-db-clear" class="btn btn-db-clear">DBクリア</button>
     </div>
   </header>
 
+  <div id="update-banner" class="update-banner hidden">
+    <span>新しいバージョンがあります（更新するとスキャン結果はクリアされます）</span>
+    <button id="btn-update" class="btn btn-sm btn-primary">更新</button>
+  </div>
+
   <main class="main-content">
 
     <!-- カメラ連続スキャン -->
     <section class="camera-section" id="camera-section">
-      <div id="reader"></div>
+      <div id="reader">
+        <video id="camera-video" playsinline muted autoplay></video>
+        <div id="scan-guide" class="scan-guide"></div>
+        <p class="scan-idle-msg">バーコードを枠に合わせ、10〜20cm 離してかざしてください</p>
+      </div>
       <div class="camera-controls">
         <button id="btn-start" class="btn btn-primary">▶ 連続スキャン開始</button>
         <button id="btn-stop" class="btn btn-secondary" disabled>■ 停止</button>
@@ -71,7 +80,7 @@
       <input id="csv-url-input" type="url" class="url-input"
              placeholder="https://example.com/products.csv"
              autocomplete="url" autocorrect="off" autocapitalize="off" spellcheck="false">
-      <p class="csv-format-hint">必須列: JAN / sku-name / category / description</p>
+      <p class="csv-format-hint">列: JAN（必須） / sku_name / category / description　文字コード: UTF-8・Shift_JIS</p>
       <div class="overlay-actions">
         <button id="btn-csv-cancel" class="btn btn-secondary">キャンセル</button>
         <button id="btn-csv-fetch" class="btn btn-primary">URLから読み込む</button>
@@ -105,8 +114,8 @@
     </div>
   </div>
 
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-  <script src="js/app.js?v=2026-06-10-5"></script>
+  <script src="vendor/papaparse.min.js"></script>
+  <script src="vendor/zxing-reader.js"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>

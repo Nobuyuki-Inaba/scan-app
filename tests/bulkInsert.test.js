@@ -1,5 +1,5 @@
 const FDBFactory = require('fake-indexeddb/lib/FDBFactory');
-const { bulkInsert, lookupJAN } = require('../js/app.js');
+const { bulkInsert, lookupJAN } = require('../public/js/app.js');
 
 function openTestDB() {
   const factory = new FDBFactory();

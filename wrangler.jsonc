@@ -1,0 +1,13 @@
+// Cloudflare Workers（静的アセット配信のみ・サーバコードなし）
+//
+//   npm run deploy   … テストを通してから public/ を配信する
+//
+// public/ だけを配るので、秘密鍵（*.pem）・tests/・node_modules/・data/ は公開されない。
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "scan-app",
+  "compatibility_date": "2026-08-31",
+  "assets": {
+    "directory": "./public"
+  }
+}

@@ -10,7 +10,7 @@ describe('resolveProduct() — demoMode OFF', () => {
   beforeEach(() => {
     localStorage.setItem('demo_mode', 'false');
     jest.resetModules();
-    ({ resolveProduct } = require('../js/app.js'));
+    ({ resolveProduct } = require('../public/js/app.js'));
   });
 
   test('returns dbProduct unchanged when found', () => {
@@ -34,7 +34,7 @@ describe('resolveProduct() — demoMode ON', () => {
   beforeEach(() => {
     localStorage.setItem('demo_mode', 'true');
     jest.resetModules();
-    ({ resolveProduct } = require('../js/app.js'));
+    ({ resolveProduct } = require('../public/js/app.js'));
   });
 
   test('overrides category with a round-robin value when dbProduct is provided', () => {

@@ -53,7 +53,7 @@ CDN は使わない（オフライン起動と CDN 障害対策）。`app.js` �
 ### データフロー
 
 1. **CSV読み込み**: ファイル選択、または URL を `fetch` → Blob → `importCsv()`（バイト列 → `decodeCsvBytes()` → `parseCsvRecords()` で PapaParse・JAN 重複排除）→ `bulkInsert()` で IndexedDB に一括置換保存
-2. **スキャン**: `getUserMedia` → `<video>` → 毎フレーム、スキャン枠の範囲を**映像の元解像度で** canvas に切り出し → `ZXingWASM.readBarcodes()` → 1次元バーコードは同じ値が2回連続で読めたら確定（誤読対策）→ `processCode()`
+2. **スキャン**: `getUserMedia` → `<video>` → 約15回/秒（`SCAN_INTERVAL`。電池対策）、スキャン枠の範囲を**映像の元解像度で** canvas に切り出し → `ZXingWASM.readBarcodes()` → 1次元バーコードは同じ値が2回連続で読めたら確定（誤読対策）→ `processCode()`
 3. **照合**: `processCode()`（カメラ・手入力共通）→ `lookupJAN()` で IndexedDB をキー直引き → `scanSession` Map に追加 → カテゴリでグループ化して `renderGroupedResults()` で描画
 4. **デモモード**: `demoMode` フラグが true のとき、DBのカテゴリを無視してラウンドロビン分類（A→B→C→...）を使う。`localStorage` に永続化
 

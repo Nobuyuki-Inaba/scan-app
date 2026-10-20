@@ -5,7 +5,7 @@ const DB_NAME    = 'scan_app_db';
 const DB_VERSION = 2;
 const STORE_NAME = 'products';
 
-const VERSION = { date: '2026-10-20', count: 7 };
+const VERSION = { date: '2026-10-21', count: 8 };
 
 // ── 状態 ──────────────────────────────────────────────────
 let db  = null;
@@ -434,6 +434,7 @@ function loadCsvFromFile(file) {
 const CONFIRM_HITS     = 2;    // 1次元バーコードは同じ値が連続でこの回数読めたら確定（誤読対策）
 const CONFIRM_WINDOW   = 800;  // ms: 連続とみなす間隔
 const REPEAT_COOLDOWN  = 1500; // ms: 確定した値をかざしたままのとき、再通知しない時間
+const SCAN_INTERVAL    = 66;   // ms: デコードの最短間隔（約15回/秒）。上限なしだと毎秒60回以上回り電池を消耗する
 
 let readerOptions = null;
 let zxingReady    = null;
@@ -570,7 +571,13 @@ function stopScanner() {
 
 function scanFrame(c) {
   if (cam !== c) return;
-  const next = () => { if (cam === c) requestAnimationFrame(() => scanFrame(c)); };
+  const started = performance.now();
+  // 前回の開始から SCAN_INTERVAL 空けて、次の描画フレームで読む
+  const next = () => {
+    if (cam !== c) return;
+    const wait = Math.max(0, SCAN_INTERVAL - (performance.now() - started));
+    setTimeout(() => requestAnimationFrame(() => scanFrame(c)), wait);
+  };
   const v = c.video;
   if (v.readyState < 2 || !v.videoWidth) { next(); return; }
 

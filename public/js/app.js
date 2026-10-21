@@ -5,7 +5,7 @@ const DB_NAME    = 'scan_app_db';
 const DB_VERSION = 2;
 const STORE_NAME = 'products';
 
-const VERSION = { date: '2026-10-21', count: 8 };
+const VERSION = { date: '2026-10-21', count: 9 };
 
 // ── 状態 ──────────────────────────────────────────────────
 let db  = null;
@@ -337,7 +337,7 @@ function parseCsvRecords(text) {
 
   const columns = buildColumnMap(rows[0]);
   if (columns.hasHeader && columns.index.jan < 0) {
-    throw new Error('JAN列が見つかりません（列名: JAN / sku-name / category / description）');
+    throw new Error('JAN列が見つかりません（列名: JAN / sku_name / category / description）');
   }
 
   const byJan = new Map();
@@ -378,7 +378,7 @@ function reportImport(result) {
       + '件はJANが指数表記（4.9E+12 等）のためスキップ。Excelで列を文字列にして保存し直してください', 'error', 8000);
   } else if (result.noDetails) {
     showToast(result.count.toLocaleString() + '件読み込み。商品名・カテゴリの列が見つかりません'
-      + '（列名: sku-name / category）', 'error', 6000);
+      + '（列名: sku_name / category）', 'error', 6000);
   } else {
     showToast(result.count.toLocaleString() + '件の読み込み完了', 'success');
   }

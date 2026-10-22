@@ -3,7 +3,7 @@
 // アプリ一式をバージョン単位でキャッシュする（Cache-First）。
 // リリース時に VERSION を変えると新しい SW として検出され、app.js が更新バナーを出す。
 // ユーザーが「更新」を押すと SKIP_WAITING → activate で旧キャッシュを削除 → 再読み込み。
-const VERSION    = '2026-10-21-9';
+const VERSION    = '2026-10-23-10';
 const CACHE_NAME = 'scan-app-' + VERSION;
 
 // index.html は './' で持つ（/index.html は Cloudflare が / へリダイレクトするため、

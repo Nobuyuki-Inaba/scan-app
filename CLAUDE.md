@@ -101,7 +101,7 @@ CSV取り込み・カメラ・手入力のすべてで `normalizeCode()` を通�
 ### 動作環境上の制約
 
 - HTTPS 必須（iOS SafariのカメラAPI要件）
-- `getUserMedia()` はユーザージェスチャーから同期的に呼び出す必要がある（`startScanner()` は開始ボタンのクリックから直接呼ぶ）
+- `getUserMedia()` はユーザージェスチャーから同期的に呼び出す必要がある（`startScanner()` は `#reader` のクリックから直接呼ぶ。映像のどこをタップしても開始・停止する）
 - iOS 版 Chrome も中身は WebKit なので Safari と同じ挙動
 - プライベートブラウズでは IndexedDB が使用不可（検知してエラー表示）
 - `visibilitychange` / `pagehide` でカメラを自動停止

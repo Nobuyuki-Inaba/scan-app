@@ -33,30 +33,15 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 16px;
-  padding-top: calc(10px + env(safe-area-inset-top));
+  gap: 8px;
+  padding: 8px 16px;
+  padding-top: calc(8px + env(safe-area-inset-top));
   background: var(--header-bg);
   color: #fff;
 }
 
-.header-left {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.app-title {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 700;
-  line-height: 1.2;
-  cursor: pointer;
-  user-select: none;
-  -webkit-user-select: none;
-}
-
 .header-meta {
+  min-width: 0;
   font-size: 12px;
   color: rgba(255, 255, 255, 0.6);
   white-space: nowrap;
@@ -82,6 +67,10 @@ html, body {
   justify-content: center;
   white-space: nowrap;
   -webkit-tap-highlight-color: transparent;
+}
+
+.btn[hidden] {
+  display: none;
 }
 
 .btn:disabled {
@@ -116,12 +105,24 @@ html, body {
 .btn-demo.demo-on  { background: #ff9f0a; color: #fff; }
 .btn-demo.demo-off { background: #636366; color: #fff; }
 
+.btn-icon {
+  background: #636366;
+  color: #fff;
+  padding: 5px 10px;
+  font-size: 17px;
+  border-radius: 8px;
+}
+
 .btn-db-clear {
   background: #ff453a;
   color: #fff;
-  padding: 7px 10px;
-  font-size: 13px;
+  padding: 10px;
+  font-size: 14px;
   border-radius: 8px;
+}
+
+.overlay-content .btn-db-clear {
+  margin: 0 0 20px;
 }
 
 /* ── Camera section ── */
@@ -141,7 +142,8 @@ html, body {
 #reader.flash-success { outline: 4px solid var(--success); }
 #reader.flash-error   { outline: 4px solid var(--danger); }
 
-/* 映像の表示は object-fit: cover。スキャン位置の計算（app.js の toSourceRect）もこれを前提にしている */
+/* 映像の表示は object-fit: cover。スキャン位置の計算（app.js の toSourceRect）もこれを前提にしている。
+   高さを変えるときは .btn-reader が枠に被らないかも確認すること */
 #camera-video {
   width: 100%;
   height: 100%;
@@ -160,20 +162,60 @@ html, body {
 
 #reader.running .scan-guide { display: block; }
 
-.scan-idle-msg {
+.scan-idle {
   position: absolute;
   inset: 0;
-  margin: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 10px;
   padding: 0 24px;
+}
+
+.scan-idle-msg {
+  margin: 0;
   color: rgba(255, 255, 255, 0.6);
   font-size: 13px;
   text-align: center;
 }
 
-#reader.running .scan-idle-msg { display: none; }
+#reader.running .scan-idle { display: none; }
+
+/* 映像に重ねるボタン。読み取りは映像そのものを切り出すのでデコードには写らないが、
+   枠に被ると狙いを付けにくいので、枠の下の余白（guideRect の高さ 15% = 180px で 27px）に収める */
+.btn-reader {
+  position: absolute;
+  bottom: 3px;
+  height: 22px;
+  padding: 0 10px;
+  font-size: 12px;
+  line-height: 22px;
+  border-radius: 6px;
+  background: rgba(28, 28, 30, 0.75);
+  color: #fff;
+}
+
+.btn-reader-stop {
+  left: 8px;
+  background: rgba(255, 59, 48, 0.9);
+}
+
+#reader:not(.running) .btn-reader-stop { display: none; }
+
+/* スキャン中は映像全体が停止のタップ範囲 */
+#reader.running { cursor: pointer; }
+
+.btn-toggle-input {
+  right: 8px;
+}
+
+/* 見た目は枠の余白に収めたまま、タップできる範囲だけ 44px 四方に広げる */
+.btn-toggle-input::after {
+  content: '';
+  position: absolute;
+  inset: -19px -8px -3px -10px;
+}
 
 /* ── 更新バナー ── */
 .update-banner {
@@ -189,15 +231,9 @@ html, body {
 .update-banner span { flex: 1; }
 .update-banner.hidden { display: none; }
 
-.camera-controls {
-  display: flex;
-  gap: 12px;
-  padding: 12px 16px;
-  background: #000;
-}
-
-.camera-controls .btn {
-  flex: 1;
+.btn-toggle-input[aria-expanded="true"] {
+  background: var(--primary);
+  color: #fff;
 }
 
 /* ── JAN入力セクション ── */
@@ -205,6 +241,10 @@ html, body {
   padding: 10px 16px;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
+}
+
+.input-section[hidden] {
+  display: none;
 }
 
 .input-row {
@@ -246,9 +286,25 @@ html, body {
   border-bottom: 1px solid var(--border);
   font-size: 15px;
   font-weight: 600;
+  gap: 8px;
   position: sticky;
-  top: 60px;
+  top: var(--header-h, 48px); /* ヘッダーの実寸を app.js が入れる（ホーム画面アプリはステータスバー分高くなる） */
   z-index: 90;
+}
+
+.session-bar #scan-count {
+  min-width: 0;
+}
+
+.session-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.session-actions .btn-sm {
+  padding: 6px 10px;
+  font-size: 13px;
 }
 
 /* ── Results ── */

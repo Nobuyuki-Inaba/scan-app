@@ -5,7 +5,7 @@ const DB_NAME    = 'scan_app_db';
 const DB_VERSION = 2;
 const STORE_NAME = 'products';
 
-const VERSION = { date: '2026-10-21', count: 9 };
+const VERSION = { date: '2026-10-23', count: 10 };
 
 // ── 状態 ──────────────────────────────────────────────────
 let db  = null;
@@ -112,6 +112,20 @@ function isManualInputEnabled() {
 function applyInputMode() {
   const input = document.getElementById('jan-input');
   if (input) input.inputMode = isManualInputEnabled() ? 'numeric' : 'none';
+}
+
+// JAN入力欄は普段使わないので隠しておき、⌨ ボタンで出す。ハンディスキャナー用に出したままにできるよう状態を保存する
+const INPUT_VISIBLE_KEY = 'input_visible';
+
+function isInputVisible() {
+  return localStorage.getItem(INPUT_VISIBLE_KEY) === 'true'; // デフォルト: 非表示
+}
+
+function applyInputVisibility(focus) {
+  const visible = isInputVisible();
+  document.getElementById('input-section').hidden = !visible;
+  document.getElementById('btn-toggle-input').setAttribute('aria-expanded', visible ? 'true' : 'false');
+  if (visible && focus) document.getElementById('jan-input').focus();
 }
 
 // ── デモモード ────────────────────────────────────────────
@@ -435,6 +449,7 @@ const CONFIRM_HITS     = 2;    // 1次元バーコードは同じ値が連続で
 const CONFIRM_WINDOW   = 800;  // ms: 連続とみなす間隔
 const REPEAT_COOLDOWN  = 1500; // ms: 確定した値をかざしたままのとき、再通知しない時間
 const SCAN_INTERVAL    = 66;   // ms: デコードの最短間隔（約15回/秒）。上限なしだと毎秒60回以上回り電池を消耗する
+const STOP_GUARD_MS    = 600;  // ms: 開始直後はタップしても停止しない（開始の二度押し対策）
 
 let readerOptions = null;
 let zxingReady    = null;
@@ -483,6 +498,10 @@ function toSourceRect(rect, viewW, viewH, videoW, videoH) {
 }
 
 function layoutGuide() {
+  // セッションバーをヘッダーの真下に貼り付けるため、ヘッダーの実寸を CSS に渡す
+  const header = document.querySelector('.app-header');
+  document.documentElement.style.setProperty('--header-h', header.offsetHeight + 'px');
+
   const reader = document.getElementById('reader');
   const guide  = document.getElementById('scan-guide');
   const r = guideRect(reader.clientWidth, reader.clientHeight, isSquareGuide());
@@ -528,6 +547,7 @@ function startScanner() {
               canvas: document.createElement('canvas'), ctx: null,
               lastText: '', lastTime: 0, hits: 0, confirmedText: '', confirmedTime: 0 };
   c.ctx = c.canvas.getContext('2d', { willReadFrequently: true });
+  c.startedAt = Date.now();
   cam = c;
   setCameraButtons(true);
   readerOptions = buildReaderOptions();
@@ -734,6 +754,7 @@ function renderGroupedResults() {
 
   if (scanSession.size === 0) {
     container.innerHTML = '<p class="empty-msg">スキャン結果はここに表示されます</p>';
+    updateToggleAllButton();
     return;
   }
 
@@ -778,6 +799,27 @@ function renderGroupedResults() {
   }).join('');
 
   container.innerHTML = html;
+  updateToggleAllButton();
+}
+
+// 開いているグループが1つでもあれば「全て閉じる」、すべて閉じていれば「全て開く」
+function updateToggleAllButton() {
+  const btn    = document.getElementById('btn-toggle-all');
+  const groups = document.querySelectorAll('#results details.result-group');
+  btn.hidden = groups.length === 0;
+  const anyOpen = [...groups].some(g => g.open);
+  btn.textContent = anyOpen ? '全て閉じる' : '全て開く';
+}
+
+function toggleAllGroups() {
+  const groups = [...document.querySelectorAll('#results details.result-group')];
+  const open   = !groups.some(g => g.open);
+  for (const g of groups) {
+    g.open = open;
+    if (open) closedGroups.delete(g.dataset.key);
+    else closedGroups.add(g.dataset.key);
+  }
+  updateToggleAllButton();
 }
 
 function showToast(message, type, duration) {
@@ -859,8 +901,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // ストレージの自動削除を避ける（ホーム画面アプリでは元々対象外）
   if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
 
-  // タイトルタップで設定ダイアログ
-  document.querySelector('.app-title').addEventListener('click', openSettingsDialog);
+  // ⚙ボタンで設定ダイアログ
+  document.getElementById('btn-settings').addEventListener('click', openSettingsDialog);
   document.getElementById('btn-settings-close').addEventListener('click', () => {
     const checked = [...document.querySelectorAll('#format-checkboxes input:checked')].map(i => i.value);
     if (checked.length === 0) { showToast('最低1つ選択してください', 'error'); return; }
@@ -933,16 +975,20 @@ document.addEventListener('DOMContentLoaded', () => {
     janInput.focus();
   });
 
-  // ページ読み込み後に入力フィールドへフォーカス（ハンディスキャナーがすぐ使えるよう）
-  janInput.focus();
-
-  // 開始ボタン: startScanner() を同期的に呼ぶ（iOS getUserMedia要件）
-  document.getElementById('btn-start').addEventListener('click', () => {
-    startScanner();
+  // 入力欄を出しているときはページ読み込み後にフォーカス（ハンディスキャナーがすぐ使えるよう）
+  applyInputVisibility(true);
+  document.getElementById('btn-toggle-input').addEventListener('click', () => {
+    localStorage.setItem(INPUT_VISIBLE_KEY, isInputVisible() ? 'false' : 'true');
+    applyInputVisibility(true);
   });
 
-  // 停止ボタン
-  document.getElementById('btn-stop').addEventListener('click', () => {
+  // カメラ映像のどこをタップしても開始・停止する（iPhone SE2 で小さいボタンを狙わなくて済むように）。
+  // 開始・停止ボタンのクリックもここに伝わる。startScanner() は同期的に呼ぶ（iOS getUserMedia要件）
+  document.getElementById('reader').addEventListener('click', (e) => {
+    if (e.target.closest('#btn-toggle-input')) return;
+    if (!cam) { startScanner(); return; }
+    // 開始直後の二度押しで止まらないようにする
+    if (Date.now() - cam.startedAt < STOP_GUARD_MS) return;
     stopScanner();
   });
 
@@ -955,6 +1001,8 @@ document.addEventListener('DOMContentLoaded', () => {
     updateScanCount();
     renderGroupedResults();
   });
+
+  document.getElementById('btn-toggle-all').addEventListener('click', toggleAllGroups);
 
   const results = document.getElementById('results');
 
@@ -982,6 +1030,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!el.matches || !el.matches('details.result-group')) return;
     if (el.open) closedGroups.delete(el.dataset.key);
     else closedGroups.add(el.dataset.key);
+    updateToggleAllButton();
   }, true);
 
   // オーバーレイ閉じるボタン
